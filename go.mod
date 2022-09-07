@@ -7,6 +7,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/evertras/bubble-table v0.14.6
 	github.com/kakengloh/tsk v0.0.0-20220904152015-0a13a534d6f9
+	github.com/xeonx/timeago v1.0.0-rc5
 )
 
 require (

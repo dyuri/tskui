@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -11,6 +12,7 @@ import (
 	"github.com/kakengloh/tsk/driver"
 	"github.com/kakengloh/tsk/entity"
 	"github.com/kakengloh/tsk/repository"
+	"github.com/xeonx/timeago"
 )
 
 const (
@@ -45,6 +47,26 @@ var (
 	}
 )
 
+func taskDueAsString(task entity.Task) string {
+	due := ""
+
+	if !task.Due.IsZero() {
+		if time.Now().Before(task.Due) {
+			if time.Until(task.Due) < 24*time.Hour {
+				due = timeago.English.Format(task.Due)
+			} else {
+				due = task.Due.Format("2006-01-02 15:04:05")
+			}
+		} else {
+			due = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#cc241d")).
+				Render(timeago.English.Format(task.Due))
+		}
+	}
+
+	return due
+}
+
 type Model struct {
 	taskRepository repository.TaskRepository
 	tableModel     table.Model
@@ -65,25 +87,12 @@ func NewModel(tr repository.TaskRepository) Model {
 		table.NewColumn(columnKeyNotes, "Notes", 16), // TODO FlexColumn
 	}
 
-	rows := []table.Row{
-		table.NewRow(table.RowData{
-			columnKeyID:       "1",
-			columnKeyTitle:    "Do the thing",
-			columnKeyStatus:   "open",
-			columnKeyPriority: "high",
-			columnKeyCreated:  "2020-01-01",
-			columnKeyDueDate:  "2020-01-02",
-			columnKeyNotes:    "This is a note",
-		}),
-	}
-
 	keys := table.DefaultKeyMap()
 	keys.RowDown.SetKeys("j", "down", "s")
 	keys.RowUp.SetKeys("k", "up", "w")
 
 	model := Model{
 		tableModel: table.New(columns).
-			WithRows(rows).
 			WithKeyMap(keys).
 			Focused(true).
 			Border(customBorder).
@@ -123,7 +132,7 @@ func updateRows(m Model) Model {
 			columnKeyStatus:   entity.TaskStatusToString[task.Status],
 			columnKeyPriority: entity.TaskPriorityToString[task.Priority],
 			columnKeyCreated:  task.CreatedAt.Format("2006-01-02 15:04:05"),
-			columnKeyDueDate:  task.Due.Format("2006-01-02 15:04:05"),
+			columnKeyDueDate:  taskDueAsString(task),
 			columnKeyNotes:    strings.Join(task.Notes, "\n"),
 		}))
 	}
